@@ -1,0 +1,3 @@
+{"hooks":{
+"UserPromptSubmit":[{"hooks":[{"type":"command","command":"node \"$CLAUDE_PROJECT_DIR/.agent-logs/capture.js\""}]}],
+"Stop":[{"hooks":[{"type":"command","command":"node \"$CLAUDE_PROJECT_DIR/.agent-logs/capture.js\""}]}]}}

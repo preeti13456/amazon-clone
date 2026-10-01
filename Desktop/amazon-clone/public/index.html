@@ -1,0 +1,71 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cartly — shop everything</title>
+<style>
+:root{--nav:#131921;--nav2:#232f3e;--or:#ffa41c;--or2:#fa8900;--bg:#eaeded;--tx:#0f1111;--mut:#565959;--lk:#007185;--rd:#b12704}
+*{box-sizing:border-box}body{margin:0;font:15px/1.4 "Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--tx)}
+a{color:var(--lk);text-decoration:none}a:hover{text-decoration:underline;color:#c45500}
+header{background:var(--nav);color:#fff;display:flex;gap:12px;align-items:center;padding:8px 14px;flex-wrap:wrap}
+.logo{font-size:24px;font-weight:700;color:#fff}.logo b{color:var(--or)}
+.search{flex:1;min-width:200px;display:flex}.search input{flex:1;padding:10px;border:0;border-radius:6px 0 0 6px;font-size:15px}
+.search button{background:var(--or);border:0;padding:0 16px;border-radius:0 6px 6px 0;cursor:pointer;font-size:16px}
+.hl{color:#fff;font-size:13px;cursor:pointer;padding:6px;border:1px solid transparent;border-radius:3px;background:none}.hl:hover{border-color:#fff;text-decoration:none;color:#fff}
+nav{background:var(--nav2);color:#fff;padding:6px 14px;display:flex;gap:16px;overflow-x:auto;white-space:nowrap}nav a{color:#fff;font-size:14px}
+main{max-width:1200px;margin:0 auto;padding:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+.card{background:#fff;padding:14px;border-radius:4px;display:flex;flex-direction:column;gap:6px}
+.img{height:150px;display:grid;place-items:center;font-size:72px;background:#f3f3f3;border-radius:4px}
+.price{font-size:20px}.price small{font-size:12px;vertical-align:top}.star{color:var(--or2)}.prime{color:#00a8e1;font-weight:700;font-size:12px}
+.btn{background:var(--or);border:1px solid var(--or2);border-radius:20px;padding:8px 16px;cursor:pointer;font-size:14px}.btn:hover{background:var(--or2)}
+.btn.buy{background:#ffd814;border-color:#fcd200}.btn.ghost{background:#fff;border-color:#d5d9d9}
+.row{display:flex;gap:16px;flex-wrap:wrap}.panel{background:#fff;padding:18px;border-radius:4px}
+.hero{background:linear-gradient(120deg,#232f3e,#37475a);color:#fff;padding:28px;border-radius:4px;margin-bottom:14px}.hero h1{margin:0 0 6px}
+input,select{padding:9px;border:1px solid #888;border-radius:4px;font-size:14px;width:100%;margin:4px 0 10px}
+.auth{max-width:380px;margin:20px auto}.err{color:var(--rd);margin:6px 0}.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#067d62;color:#fff;padding:10px 18px;border-radius:6px}
+.line{display:flex;gap:14px;align-items:center;padding:12px 0;border-bottom:1px solid #ddd}.line .img{width:80px;height:80px;font-size:40px}
+.filters{display:flex;gap:10px;align-items:center;margin-bottom:12px}.filters select{width:auto;margin:0}
+:focus-visible{outline:2px solid var(--or2);outline-offset:2px}
+</style></head><body>
+<header><a class="logo" href="#/">cartly<b>.</b></a>
+<form class="search" id="sf"><input id="q" placeholder="Search products" aria-label="Search"><button aria-label="Search">🔍</button></form>
+<a class="hl" id="acct" href="#/login"></a><a class="hl" href="#/orders">Returns &amp; Orders</a><a class="hl" href="#/cart">🛒 Cart <b id="cc">0</b></a></header>
+<nav id="nav"></nav><main id="app"></main>
+<script>
+const $=s=>document.querySelector(s),app=$("#app"),money=n=>"$"+n.toFixed(2);
+const S={get token(){return localStorage.t||""},get name(){return localStorage.n||""},get cart(){try{return JSON.parse(localStorage.c||"[]")}catch{return[]}}};
+const setCart=c=>{localStorage.c=JSON.stringify(c);badge()};
+const api=async(u,o={})=>{const r=await fetch("/api"+u,{...o,headers:{"Content-Type":"application/json",Authorization:"Bearer "+S.token},body:o.body&&JSON.stringify(o.body)});const j=await r.json();if(!r.ok)throw Object.assign(new Error(j.error||"Something went wrong."),{status:r.status});return j};
+const toast=m=>{const t=document.createElement("div");t.className="toast";t.textContent=m;document.body.append(t);setTimeout(()=>t.remove(),1800)};
+const stars=r=>"★".repeat(Math.round(r))+"☆".repeat(5-Math.round(r));
+function badge(){$("#cc").textContent=S.cart.reduce((s,i)=>s+i.qty,0);$("#acct").innerHTML=S.token?`Hello, ${esc(S.name)}<br><b>Sign out</b>`:`Hello, sign in<br><b>Account</b>`}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function add(id,qty=1){const c=S.cart,i=c.find(x=>x.id==id);i?i.qty=Math.min(10,i.qty+qty):c.push({id:+id,qty});setCart(c);toast("Added to cart")}
+$("#acct").onclick=e=>{if(S.token){e.preventDefault();localStorage.removeItem("t");localStorage.removeItem("n");badge();location.hash="#/"}};
+$("#sf").onsubmit=e=>{e.preventDefault();location.hash="#/?q="+encodeURIComponent($("#q").value)};
+const card=p=>`<div class="card"><a href="#/p/${p.id}"><div class="img">${p.emoji}</div></a><a href="#/p/${p.id}">${esc(p.title)}</a><div><span class="star">${stars(p.rating)}</span> <small>${p.reviews.toLocaleString()}</small></div><div class="price"><small>$</small>${p.price.toFixed(2)}</div>${p.prime?'<span class="prime">✓prime</span>':""}<button class="btn" onclick="add(${p.id})">Add to cart</button></div>`;
+async function home(qs){const sp=new URLSearchParams(qs),q=sp.get("q")||"",cat=sp.get("category")||"",sort=sp.get("sort")||"";
+ const list=await api("/products?"+new URLSearchParams({q,category:cat,sort}));
+ app.innerHTML=(q||cat?"":`<div class="hero"><h1>Everything you need, delivered fast.</h1><p>Browse ${list.length} products across electronics, home, books, fashion and sports.</p></div>`)+
+ `<div class="filters"><b>${list.length} results${q?` for “${esc(q)}”`:""}${cat?` in ${esc(cat)}`:""}</b><select id="so" aria-label="Sort"><option value="">Featured</option><option value="low">Price: low to high</option><option value="high">Price: high to low</option><option value="rating">Top rated</option></select></div><div class="grid">${list.map(card).join("")||'<div class="panel">No products match. Try a different search.</div>'}</div>`;
+ $("#so").value=sort;$("#so").onchange=e=>{sp.set("sort",e.target.value);location.hash="#/?"+sp}}
+async function product(id){try{const p=await api("/products/"+id);
+ app.innerHTML=`<div class="panel row"><div class="img" style="width:320px;height:320px;font-size:150px">${p.emoji}</div><div style="flex:1;min-width:260px"><h2>${esc(p.title)}</h2><div><span class="star">${stars(p.rating)}</span> ${p.reviews.toLocaleString()} ratings</div><hr><div class="price" style="font-size:28px;color:var(--rd)">${money(p.price)}</div>${p.prime?'<span class="prime">✓prime free delivery</span>':""}<p>${esc(p.desc)}</p><label>Qty <select id="qty" style="width:auto">${[1,2,3,4,5].map(n=>`<option>${n}</option>`)}</select></label><br><button class="btn" onclick="add(${p.id},+$('#qty').value)">Add to cart</button> <button class="btn buy" onclick="add(${p.id},+$('#qty').value);location.hash='#/checkout'">Buy now</button></div></div>`}
+ catch(e){app.innerHTML=`<div class="panel">${esc(e.message)}</div>`}}
+async function cart(){const c=S.cart;if(!c.length){app.innerHTML=`<div class="panel"><h2>Your cart is empty</h2><a href="#/">Continue shopping</a></div>`;return}
+ const items=await Promise.all(c.map(async i=>({...await api("/products/"+i.id),qty:i.qty}))),tot=items.reduce((s,i)=>s+i.price*i.qty,0);
+ app.innerHTML=`<div class="panel"><h2>Shopping Cart</h2>${items.map(i=>`<div class="line"><div class="img">${i.emoji}</div><div style="flex:1"><a href="#/p/${i.id}">${esc(i.title)}</a><div class="price">${money(i.price)}</div><select style="width:auto" onchange="setQty(${i.id},+this.value)">${[...Array(10)].map((_,n)=>`<option ${n+1==i.qty?"selected":""}>${n+1}</option>`)}</select> <a href="#" onclick="rm(${i.id});return false">Delete</a></div></div>`).join("")}<h3 style="text-align:right">Subtotal (${items.reduce((s,i)=>s+i.qty,0)} items): ${money(tot)}</h3><div style="text-align:right"><a class="btn buy" style="display:inline-block;color:#000" href="#/checkout">Proceed to checkout</a></div></div>`}
+window.setQty=(id,q)=>{setCart(S.cart.map(i=>i.id==id?{...i,qty:q}:i));cart()};window.rm=id=>{setCart(S.cart.filter(i=>i.id!=id));cart()};
+function authView(mode,next){const su=mode==="signup";
+ app.innerHTML=`<div class="panel auth"><h2>${su?"Create account":"Sign in"}</h2>${su?'<label>Your name<input id="n"></label>':""}<label>Email<input id="e" type="email"></label><label>Password${su?" (6+ characters)":""}<input id="p" type="password"></label><div class="err" id="er"></div><button class="btn" style="width:100%" id="go">${su?"Create your account":"Sign in"}</button><p>${su?'Already a customer? <a href="#/login">Sign in</a>':'New here? <a href="#/signup">Create your account</a>'}</p></div>`;
+ $("#go").onclick=async()=>{try{const r=await api(su?"/signup":"/login",{method:"POST",body:{name:su&&$("#n").value,email:$("#e").value,password:$("#p").value}});localStorage.t=r.token;localStorage.n=r.name;badge();location.hash=next||"#/"}catch(e){$("#er").textContent=e.message}}}
+async function checkout(){if(!S.token)return authView("login","#/checkout");const c=S.cart;if(!c.length)return cart();
+ const items=await Promise.all(c.map(async i=>({...await api("/products/"+i.id),qty:i.qty}))),tot=items.reduce((s,i)=>s+i.price*i.qty,0);
+ app.innerHTML=`<div class="row"><div class="panel" style="flex:2;min-width:280px"><h2>Checkout</h2><h3>Delivery address</h3><label>Full name<input id="an" value="${esc(S.name)}"></label><label>Address<input id="al"></label><label>City<input id="ac"></label><label>Postal code<input id="az"></label><h3>Payment</h3><p>Pay on delivery (demo — no card needed).</p><div class="err" id="er"></div></div><div class="panel" style="flex:1;min-width:240px;align-self:flex-start"><button class="btn buy" style="width:100%" id="po">Place your order</button><p>Items: ${money(tot)}<br>Delivery: FREE</p><h3>Order total: ${money(tot)}</h3></div></div>`;
+ $("#po").onclick=async()=>{try{const o=await api("/orders",{method:"POST",body:{items:c,address:{name:$("#an").value,line:$("#al").value,city:$("#ac").value,zip:$("#az").value}}});setCart([]);app.innerHTML=`<div class="panel"><h2 style="color:#067d62">✓ Order placed, thank you!</h2><p>Order <b>${o.id}</b> · ${money(o.total)}</p><a href="#/orders">View your orders</a></div>`}catch(e){$("#er").textContent=e.message}}}
+async function orders(){if(!S.token)return authView("login","#/orders");const os=await api("/orders");
+ app.innerHTML=`<div class="panel"><h2>Your Orders</h2>${os.map(o=>`<div class="panel" style="border:1px solid #ddd;margin-bottom:12px"><b>${o.id}</b> · ${new Date(o.date).toLocaleDateString()} · Total ${money(o.total)} · Ship to ${esc(o.address.city)}${o.lines.map(l=>`<div class="line"><div class="img">${l.emoji}</div><div><a href="#/p/${l.id}">${esc(l.title)}</a><div>Qty ${l.qty} · ${money(l.price)}</div></div></div>`).join("")}</div>`).join("")||"You haven't placed any orders yet."}</div>`}
+async function route(){const h=location.hash.slice(1)||"/",[p,qs]=h.split("?"),m=p.split("/");window.scrollTo(0,0);
+ try{if(p==="/")await home(qs);else if(m[1]==="p")await product(m[2]);else if(p==="/cart")await cart();else if(p==="/login")authView("login");else if(p==="/signup")authView("signup");else if(p==="/checkout")await checkout();else if(p==="/orders")await orders();else app.innerHTML='<div class="panel">Page not found.</div>'}
+ catch(e){if(e.status===401){localStorage.removeItem("t");authView("login",location.hash)}else app.innerHTML=`<div class="panel">${esc(e.message)}</div>`}}
+fetch("/api/categories").then(r=>r.json()).then(c=>$("#nav").innerHTML='<a href="#/">All</a>'+c.map(x=>`<a href="#/?category=${x}">${x}</a>`).join(""));
+addEventListener("hashchange",route);badge();route();
+</script></body></html>
